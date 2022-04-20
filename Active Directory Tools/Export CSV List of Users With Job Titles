@@ -1,0 +1,25 @@
+######################################################################################################################################
+# This script should be run on a Domain Controller running the Active Directory Users and Computers module.                          #
+# It will search within the primary domain the server is bound to for all User objects that do not have a blank job title attribute. #
+# This will then export a simple 2-column CSV file of the results in the current user's Desktop directory.                           #
+######################################################################################################################################
+
+Import-Module ActiveDirectory
+
+# Sets variable of the drive name that the script is being run from (ex. C:)
+$CurrentDriveLetter = (pwd).Drive.Name
+
+# Sets variable for the result of Get-ADDomain which is the domain the server is currently bound to.
+$DomainDN = Get-ADDomain
+
+# Queries AD Users and Computers from the top-level domain for all users with the specified properties.
+# The 'where' object with '-ne' operator prevents users without job titles from appearing. This can be helpful to exclude non-human service accounts that have been setup as user objects.
+# The variables in the export path can be adjusted as needed. The current format for example is: '2020-10-30_Employee-Titles.csv' and will be placed in the current user's desktop directory.
+Get-ADUser -Filter * -SearchBase $DomainDN -Properties DisplayName,Title | where {$_.Title -ne $Null} | Select -Property DisplayName,Title |export-csv -path $CurrentDriveLetter':\Users\'$env:UserName'\Desktop\'$((Get-Date).ToString('yyyy-MM-dd'))'_Employee-Titles.csv' -NoTypeInformation
+
+
+# This just confirms the end of the script and indicates the output location to aid with finding the file.
+echo "A CSV list of employees and their titles has been created at: "$CurrentDriveLetter":\Users\$env:UserName\Desktop\$((Get-Date).ToString('yyyy-MM-dd'))_Employee-Titles.csv"
+
+
+Read-Host -Prompt "Press Enter to exit"
